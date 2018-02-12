@@ -258,9 +258,7 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.001 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
 			// if sub cell is not visible, show it
 			NSIndexPath* subPath = [NSIndexPath indexPathForRow:1 inSection:section];
-			if(![self isCellVisible:subPath]) {
-				[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
-			}
+			[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
 		});
 	};
 	
