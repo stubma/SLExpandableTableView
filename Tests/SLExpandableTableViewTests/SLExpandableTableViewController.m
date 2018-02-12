@@ -127,7 +127,7 @@
 
 - (BOOL)tableView:(SLExpandableTableView *)tableView needsToDownloadDataForExpandableSection:(NSInteger)section
 {
-    return ![self.expandableSections containsIndex:section];
+	return NO; //![self.expandableSections containsIndex:section];
 }
 
 - (UITableViewCell<UIExpandingTableViewCell> *)tableView:(SLExpandableTableView *)tableView expandingCellForSection:(NSInteger)section

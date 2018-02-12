@@ -26,7 +26,6 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 
 @property (nonatomic, retain) UIView *storedTableHeaderView;
 @property (nonatomic, retain) UIView *storedTableFooterView;
-@property (nonatomic, assign) BOOL animating;
 
 - (void)downloadDataInSection:(NSInteger)section;
 
@@ -259,8 +258,6 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
         if ([self.myDelegate respondsToSelector:@selector(tableView:didExpandSection:animated:)]) {
             [self.myDelegate tableView:self didExpandSection:section animated:animated];
         }
-		
-		self.animating = NO;
     };
 
     if (animated) {
@@ -319,8 +316,6 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
         if ([self.myDelegate respondsToSelector:@selector(tableView:didCollapseSection:animated:)]) {
             [self.myDelegate tableView:self didCollapseSection:section animated:animated];
         }
-		
-		self.animating = NO;
     };
 
     if (animated) {
@@ -394,8 +389,7 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
             if ([self.myDataSource tableView:self needsToDownloadDataForExpandableSection:indexPath.section]) {
                 // we need to download some data first
                 [self downloadDataInSection:indexPath.section];
-            } else if(!self.animating) {
-				self.animating = YES;
+            } else {
                 if ([self.showingSectionsDictionary[key] boolValue]) {
                     [self collapseSection:indexPath.section animated:YES];
                 } else {
