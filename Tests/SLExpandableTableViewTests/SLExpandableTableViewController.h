@@ -6,7 +6,7 @@
 //  Copyright 2014 Sparrow-Labs. All rights reserved.
 //
 
-#import <SLExpandableTableView.h>
+#import "SLExpandableTableView.h"
 
 
 
