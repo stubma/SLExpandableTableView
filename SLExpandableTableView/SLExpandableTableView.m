@@ -30,6 +30,7 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 - (void)downloadDataInSection:(NSInteger)section;
 
 - (void)_resetExpansionStates;
+- (BOOL)isCellVisible:(NSIndexPath*)path;
 
 @end
 
@@ -60,6 +61,10 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 - (void)setDataSource:(id<SLExpandableTableViewDatasource>)dataSource {
     _myDataSource = dataSource;
     [super setDataSource:self];
+}
+
+- (BOOL)isCellVisible:(NSIndexPath*)path {
+	return [self.indexPathsForVisibleRows containsObject:path];
 }
 
 - (void)setTableFooterView:(UIView *)tableFooterView {
@@ -126,6 +131,7 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 }
 
 - (void)commonInit {
+	self.lastExpandedSection = -1;
     self.maximumRowCountToStillUseAnimationWhileExpanding = NSIntegerMax;
     self.expandableSectionsDictionary = [NSMutableDictionary dictionary];
     self.showingSectionsDictionary = [NSMutableDictionary dictionary];
@@ -214,6 +220,9 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
         [self downloadDataInSection:section];
         return;
     }
+	
+	// save expanded section
+	self.lastExpandedSection = section;
 
     if ([self.myDelegate respondsToSelector:@selector(tableView:willExpandSection:animated:)]) {
         [self.myDelegate tableView:self willExpandSection:section animated:animated];
@@ -249,6 +258,12 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
     }
 
     [self.animatingSectionsDictionary removeObjectForKey:@(section)];
+	
+	// if sub cell is not visible, show it
+	NSIndexPath* subPath = [NSIndexPath indexPathForRow:1 inSection:section];
+	if(![self isCellVisible:subPath]) {
+		[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+	}
 
     void(^completionBlock)(void) = ^{
         if ([self respondsToSelector:@selector(scrollViewDidScroll:)]) {
@@ -390,6 +405,14 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
                 // we need to download some data first
                 [self downloadDataInSection:indexPath.section];
             } else {
+				// if only allow one section expanded, we need collapse last expanded section
+				if(self.singleExpand && self.lastExpandedSection >= 0) {
+					if(self.lastExpandedSection != indexPath.section) {
+						[self collapseSection:self.lastExpandedSection animated:YES];
+					}
+					self.lastExpandedSection = -1;
+				}
+				
                 if ([self.showingSectionsDictionary[key] boolValue]) {
                     [self collapseSection:indexPath.section animated:YES];
                 } else {

@@ -89,6 +89,12 @@ typedef enum {
 
 @property (nonatomic, assign) UITableViewRowAnimation reloadAnimation;
 
+// true means only allow one section expanded
+@property (nonatomic, assign) BOOL singleExpand;
+
+// last expanded section, if singleExpand is true, this also means current expanded section
+@property (nonatomic, assign) NSInteger lastExpandedSection;
+
 // call tableView:needsToDownloadDataForExpandableSection: to make sure we can expand the section, otherwise through exception
 - (void)expandSection:(NSInteger)section animated:(BOOL)animated;
 - (void)collapseSection:(NSInteger)section animated:(BOOL)animated;

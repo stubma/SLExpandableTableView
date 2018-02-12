@@ -93,7 +93,7 @@
         _firstSectionStrings = @[ @"Section 0 Row 0", @"Section 0 Row 1", @"Section 0 Row 2", @"Section 0 Row 3" ];
         _secondSectionStrings = @[ @"Section 1 Row 0", @"Section 1 Row 1", @"Section 1 Row 2", @"Section 1 Row 3", @"Section 1 Row 4" ];
 
-        _sectionsArray = @[ _firstSectionStrings, _secondSectionStrings ].mutableCopy;
+        _sectionsArray = @[ _firstSectionStrings, _secondSectionStrings, _firstSectionStrings, _secondSectionStrings, _firstSectionStrings, _secondSectionStrings, _firstSectionStrings, _secondSectionStrings, _firstSectionStrings, _secondSectionStrings, _firstSectionStrings, _secondSectionStrings, _firstSectionStrings, _secondSectionStrings].mutableCopy;
         _expandableSections = [NSMutableIndexSet indexSet];
     }
     return self;
@@ -114,6 +114,7 @@
     SLExpandableTableView *tableView = [[SLExpandableTableView alloc] initWithFrame:[UIScreen mainScreen].bounds style:UITableViewStylePlain];
     tableView.dataSource = self;
     tableView.delegate = self;
+	tableView.singleExpand = YES;
     tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.view = tableView;
 }

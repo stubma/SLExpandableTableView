@@ -1,3 +1,9 @@
+# What did I change?
+* avoid multiple downloading invocation
+* add singleExpand flag to allow only one section expanded
+* remove annoying scrolling after collapsing
+* if expanded part not visible, scroll to first expanded cell
+
 # SLExpandableTableView
 
 [![CI Status](http://img.shields.io/travis/OliverLetterer/SLExpandableTableView.svg?style=flat)](https://travis-ci.org/OliverLetterer/SLExpandableTableView)
