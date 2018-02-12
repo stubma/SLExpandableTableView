@@ -27,6 +27,9 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 @property (nonatomic, retain) UIView *storedTableHeaderView;
 @property (nonatomic, retain) UIView *storedTableFooterView;
 
+@property (nonatomic, assign) BOOL animating;
+@property (nonatomic, assign) NSInteger chainSection; // if -1, means no chain action
+
 - (void)downloadDataInSection:(NSInteger)section;
 
 - (void)_resetExpansionStates;
@@ -131,7 +134,9 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 }
 
 - (void)commonInit {
+	self.animating = NO;
 	self.lastExpandedSection = -1;
+	self.chainSection = -1;
     self.maximumRowCountToStillUseAnimationWhileExpanding = NSIntegerMax;
     self.expandableSectionsDictionary = [NSMutableDictionary dictionary];
     self.showingSectionsDictionary = [NSMutableDictionary dictionary];
@@ -236,9 +241,26 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
     // update the showing state
     self.showingSectionsDictionary[key] = @YES;
 
+	void(^completionBlock)(void) = ^{
+		if ([self respondsToSelector:@selector(scrollViewDidScroll:)]) {
+			[self scrollViewDidScroll:self];
+		}
+		
+		if ([self.myDelegate respondsToSelector:@selector(tableView:didExpandSection:animated:)]) {
+			[self.myDelegate tableView:self didExpandSection:section animated:animated];
+		}
+		
+		[self.animatingSectionsDictionary removeObjectForKey:@(section)];
+		
+		self.animating = NO;
+	};
+	
     NSInteger newRowCount = [self.myDataSource tableView:self numberOfRowsInSection:section];
     // now do the animation magic to insert the new cells
     if (animated && newRowCount <= self.maximumRowCountToStillUseAnimationWhileExpanding) {
+		[CATransaction begin];
+		[CATransaction setCompletionBlock:completionBlock];
+		
         [self beginUpdates];
 
         UITableViewCell<UIExpandingTableViewCell> *cell = (UITableViewCell<UIExpandingTableViewCell> *)[self cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:section]];
@@ -253,33 +275,18 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
         [self insertRowsAtIndexPaths:insertArray withRowAnimation:self.reloadAnimation];
 
         [self endUpdates];
+		
+		[CATransaction commit];
     } else {
         [self reloadDataAndResetExpansionStates:NO];
+		completionBlock();
     }
-
-    [self.animatingSectionsDictionary removeObjectForKey:@(section)];
 	
 	// if sub cell is not visible, show it
 	NSIndexPath* subPath = [NSIndexPath indexPathForRow:1 inSection:section];
 	if(![self isCellVisible:subPath]) {
 		[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
 	}
-
-    void(^completionBlock)(void) = ^{
-        if ([self respondsToSelector:@selector(scrollViewDidScroll:)]) {
-            [self scrollViewDidScroll:self];
-        }
-
-        if ([self.myDelegate respondsToSelector:@selector(tableView:didExpandSection:animated:)]) {
-            [self.myDelegate tableView:self didExpandSection:section animated:animated];
-        }
-    };
-
-    if (animated) {
-        [CATransaction setCompletionBlock:completionBlock];
-    } else {
-        completionBlock();
-    }
 }
 
 - (void)collapseSection:(NSInteger)section animated:(BOOL)animated {
@@ -300,43 +307,58 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
     // update the showing state
     self.showingSectionsDictionary[key] = @NO;
 
+	void(^completionBlock)(void) = ^{
+		if ([self respondsToSelector:@selector(scrollViewDidScroll:)]) {
+			[self scrollViewDidScroll:self];
+		}
+		
+		if ([self.myDelegate respondsToSelector:@selector(tableView:didCollapseSection:animated:)]) {
+			[self.myDelegate tableView:self didCollapseSection:section animated:animated];
+		}
+		
+		[self.animatingSectionsDictionary removeObjectForKey:@(section)];
+		
+		// perform chain action or end
+		if(self.chainSection > -1) {
+			dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.001 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+				NSNumber* key = @(self.chainSection);
+				self.chainSection = -1;
+				if([self.showingSectionsDictionary[key] boolValue]) {
+					[self collapseSection:[key integerValue] animated:YES];
+				} else {
+					[self expandSection:[key integerValue] animated:YES];
+				}
+			});
+		} else {
+			self.animating = NO;
+		}
+	};
+	
     NSInteger newRowCount = [self.myDataSource tableView:self numberOfRowsInSection:section];
     // now do the animation magic to delete the new cells
     if (animated && newRowCount <= self.maximumRowCountToStillUseAnimationWhileExpanding) {
-        [self beginUpdates];
-
-        UITableViewCell<UIExpandingTableViewCell> *cell = (UITableViewCell<UIExpandingTableViewCell> *)[self cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:section]];
-        cell.loading = NO;
-        [cell setExpansionStyle:UIExpansionStyleCollapsed animated:YES];
-
-        NSMutableArray *deleteArray = [NSMutableArray array];
-        for (int i = 1; i < newRowCount; i++) {
-            [deleteArray addObject:[NSIndexPath indexPathForRow:i inSection:section] ];
-        }
-
-        [self deleteRowsAtIndexPaths:deleteArray withRowAnimation:self.reloadAnimation];
-
-        [self endUpdates];
+		[CATransaction begin];
+		[CATransaction setCompletionBlock:completionBlock];
+		
+		[self beginUpdates];
+		
+		UITableViewCell<UIExpandingTableViewCell> *cell = (UITableViewCell<UIExpandingTableViewCell> *)[self cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:section]];
+		cell.loading = NO;
+		[cell setExpansionStyle:UIExpansionStyleCollapsed animated:YES];
+		
+		NSMutableArray *deleteArray = [NSMutableArray array];
+		for (int i = 1; i < newRowCount; i++) {
+			[deleteArray addObject:[NSIndexPath indexPathForRow:i inSection:section] ];
+		}
+		
+		[self deleteRowsAtIndexPaths:deleteArray withRowAnimation:self.reloadAnimation];
+		
+		[self endUpdates];
+		
+		[CATransaction commit];
     } else {
         [self reloadDataAndResetExpansionStates:NO];
-    }
-
-    [self.animatingSectionsDictionary removeObjectForKey:@(section)];
-
-    void(^completionBlock)(void) = ^{
-        if ([self respondsToSelector:@selector(scrollViewDidScroll:)]) {
-            [self scrollViewDidScroll:self];
-        }
-
-        if ([self.myDelegate respondsToSelector:@selector(tableView:didCollapseSection:animated:)]) {
-            [self.myDelegate tableView:self didCollapseSection:section animated:animated];
-        }
-    };
-
-    if (animated) {
-        [CATransaction setCompletionBlock:completionBlock];
-    } else {
-        completionBlock();
+		completionBlock();
     }
 }
 
@@ -404,20 +426,27 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
             if ([self.myDataSource tableView:self needsToDownloadDataForExpandableSection:indexPath.section]) {
                 // we need to download some data first
                 [self downloadDataInSection:indexPath.section];
-            } else {
+            } else if(!self.animating) {
+				self.animating = YES;
+				
 				// if only allow one section expanded, we need collapse last expanded section
+				self.chainSection = -1;
 				if(self.singleExpand && self.lastExpandedSection >= 0) {
 					if(self.lastExpandedSection != indexPath.section) {
+						self.chainSection = indexPath.section;
 						[self collapseSection:self.lastExpandedSection animated:YES];
 					}
 					self.lastExpandedSection = -1;
 				}
 				
-                if ([self.showingSectionsDictionary[key] boolValue]) {
-                    [self collapseSection:indexPath.section animated:YES];
-                } else {
-                    [self expandSection:indexPath.section animated:YES];
-                }
+				// if no chain action, perform collapse/expand now
+				if(self.chainSection == -1) {
+					if ([self.showingSectionsDictionary[key] boolValue]) {
+						[self collapseSection:indexPath.section animated:YES];
+					} else {
+						[self expandSection:indexPath.section animated:YES];
+					}
+				}
             }
         } else {
             if ([self.myDelegate respondsToSelector:@selector(tableView:didSelectRowAtIndexPath:)]) {

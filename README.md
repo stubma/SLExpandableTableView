@@ -3,6 +3,7 @@
 * add singleExpand flag to allow only one section expanded
 * remove annoying scrolling after collapsing
 * if expanded part not visible, scroll to first expanded cell
+* for single expand, serialize collapse and expand animation to avoid ui glitch
 
 # SLExpandableTableView
 
