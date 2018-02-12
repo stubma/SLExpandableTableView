@@ -154,10 +154,12 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 }
 
 - (void)downloadDataInSection:(NSInteger)section {
-    (self.downloadingSectionsDictionary)[@(section)] = @YES;
-    [self.myDelegate tableView:self downloadDataForExpandableSection:section];
-    [self reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:0 inSection:section]]
-                withRowAnimation:UITableViewRowAnimationNone];
+	if(![@YES isEqual:(self.downloadingSectionsDictionary)[@(section)]]) {
+		(self.downloadingSectionsDictionary)[@(section)] = @YES;
+		[self.myDelegate tableView:self downloadDataForExpandableSection:section];
+		[self reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:0 inSection:section]]
+					withRowAnimation:UITableViewRowAnimationNone];
+	}
 }
 
 #pragma mark - instance methods
