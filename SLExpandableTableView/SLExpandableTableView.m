@@ -259,7 +259,7 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 			// if sub cell is not visible, show it
 			NSIndexPath* subPath = [NSIndexPath indexPathForRow:1 inSection:section];
 			if(![self isCellVisible:subPath]) {
-				[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+				[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
 			}
 		});
 	};
