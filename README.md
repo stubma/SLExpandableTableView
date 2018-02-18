@@ -1,9 +1,10 @@
 # What did I change?
 * avoid multiple downloading invocation
-* add singleExpand flag to allow only one section expanded
+* add singleExpand flag to allow only one section expanded and downloading
 * remove annoying scrolling after collapsing
 * if expanded part not visible, scroll to first expanded cell
 * for single expand, serialize collapse and expand animation to avoid ui glitch
+* add expanding state for expandable cell
 
 # SLExpandableTableView
 
