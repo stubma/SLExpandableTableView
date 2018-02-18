@@ -458,13 +458,23 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 				self.animating = YES;
 				
 				// if only allow one section expanded, we need collapse last expanded section
+				// also we need cancel downloading if has one section is in downloading state
 				self.chainSection = -1;
-				if(self.singleExpand && self.lastExpandedSection >= 0) {
-					if(self.lastExpandedSection != indexPath.section) {
-						self.chainSection = indexPath.section;
-						[self collapseSection:self.lastExpandedSection animated:YES];
+				if(self.singleExpand) {
+					if(self.lastExpandedSection >= 0) {
+						if(self.lastExpandedSection != indexPath.section) {
+							self.chainSection = indexPath.section;
+							[self collapseSection:self.lastExpandedSection animated:YES];
+						}
+						self.lastExpandedSection = -1;
+					} else {
+						for(NSNumber* sec in [self.downloadingSectionsDictionary allKeys]) {
+							if([@YES isEqual:self.downloadingSectionsDictionary[sec]]) {
+								[self cancelDownloadInSection:[sec integerValue]];
+								break;
+							}
+						}
 					}
-					self.lastExpandedSection = -1;
 				}
 				
 				// if no chain action, perform collapse/expand now
