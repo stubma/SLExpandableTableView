@@ -425,6 +425,14 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
         if (indexPath.row == 0) {
             // expand cell got clicked
             if ([self.myDataSource tableView:self needsToDownloadDataForExpandableSection:indexPath.section]) {
+				// collapse previous section if single expand is set
+				if(self.singleExpand && self.lastExpandedSection >= 0) {
+					if(self.lastExpandedSection != indexPath.section) {
+						[self collapseSection:self.lastExpandedSection animated:YES];
+					}
+					self.lastExpandedSection = -1;
+				}
+				
                 // we need to download some data first
                 [self downloadDataInSection:indexPath.section];
             } else if(!self.animating) {
