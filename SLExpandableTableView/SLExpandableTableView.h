@@ -12,7 +12,8 @@
 
 typedef enum {
     UIExpansionStyleCollapsed = 0,
-    UIExpansionStyleExpanded
+    UIExpansionStyleExpanded,
+	UIExpansionStyleExpanding
 } UIExpansionStyle;
 
 @protocol UIExpandingTableViewCell <NSObject>

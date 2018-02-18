@@ -166,8 +166,28 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 
 - (void)downloadDataInSection:(NSInteger)section {
 	if(![@YES isEqual:(self.downloadingSectionsDictionary)[@(section)]]) {
+		// if single expand, we need cancel previous download section
+		if(self.singleExpand) {
+			for(NSNumber* sec in [self.downloadingSectionsDictionary allKeys]) {
+				if([@YES isEqual:self.downloadingSectionsDictionary[sec]]) {
+					[self cancelDownloadInSection:[sec integerValue]];
+					break;
+				}
+			}
+		}
+		
+		// set flag to true
 		(self.downloadingSectionsDictionary)[@(section)] = @YES;
+		
+		// set style for loading state
+		UITableViewCell<UIExpandingTableViewCell> *cell = (UITableViewCell<UIExpandingTableViewCell> *)[self cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:section]];
+		cell.loading = YES;
+		[cell setExpansionStyle:UIExpansionStyleExpanding animated:NO];
+		
+		// call delegate
 		[self.myDelegate tableView:self downloadDataForExpandableSection:section];
+		
+		// reload row
 		[self reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:0 inSection:section]]
 					withRowAnimation:UITableViewRowAnimationNone];
 	}
@@ -206,9 +226,18 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 }
 
 - (void)cancelDownloadInSection:(NSInteger)section {
-    self.downloadingSectionsDictionary[@(section)] = @NO;
-    [self reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:0 inSection:section]]
-                withRowAnimation:UITableViewRowAnimationNone];
+	if([@YES isEqual:(self.downloadingSectionsDictionary)[@(section)]]) {
+		self.downloadingSectionsDictionary[@(section)] = @NO;
+		
+		// set style for loading state
+		UITableViewCell<UIExpandingTableViewCell> *cell = (UITableViewCell<UIExpandingTableViewCell> *)[self cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:section]];
+		cell.loading = NO;
+		[cell setExpansionStyle:UIExpansionStyleCollapsed animated:NO];
+		
+		// reload
+		[self reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:0 inSection:section]]
+					withRowAnimation:UITableViewRowAnimationNone];
+	}
 }
 
 - (void)expandSection:(NSInteger)section animated:(BOOL)animated {
