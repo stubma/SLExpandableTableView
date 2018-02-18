@@ -271,13 +271,14 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 		
 		[self.animatingSectionsDictionary removeObjectForKey:@(section)];
 		
-		self.animating = NO;
-		
 		// ensure sub area is visible
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.001 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
 			// if sub cell is not visible, show it
 			NSIndexPath* subPath = [NSIndexPath indexPathForRow:1 inSection:section];
 			[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
+			
+			// end animation flag
+			self.animating = NO;
 		});
 	};
 	
