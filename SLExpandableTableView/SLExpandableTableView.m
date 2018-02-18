@@ -470,7 +470,9 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 					} else {
 						for(NSNumber* sec in [self.downloadingSectionsDictionary allKeys]) {
 							if([@YES isEqual:self.downloadingSectionsDictionary[sec]]) {
-								[self cancelDownloadInSection:[sec integerValue]];
+								if([sec integerValue] != indexPath.section) {
+									[self cancelDownloadInSection:[sec integerValue]];
+								}
 								break;
 							}
 						}
