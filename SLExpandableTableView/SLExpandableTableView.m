@@ -274,11 +274,19 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 		// ensure sub area is visible
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.001 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
 			// if sub cell is not visible, show it
+			[CATransaction begin];
+			[CATransaction setCompletionBlock:^{
+				dispatch_async(dispatch_get_main_queue(), ^{
+					self.animating = NO;
+				});
+			}];
+			[self beginUpdates];
+			
 			NSIndexPath* subPath = [NSIndexPath indexPathForRow:1 inSection:section];
 			[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
 			
-			// end animation flag
-			self.animating = NO;
+			[self endUpdates];
+			[CATransaction commit];
 		});
 	};
 	
@@ -286,7 +294,11 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
     // now do the animation magic to insert the new cells
     if (animated && newRowCount <= self.maximumRowCountToStillUseAnimationWhileExpanding) {
 		[CATransaction begin];
-		[CATransaction setCompletionBlock:completionBlock];
+		[CATransaction setCompletionBlock:^{
+			dispatch_async(dispatch_get_main_queue(), ^{
+				completionBlock();
+			});
+		}];
 		
         [self beginUpdates];
 
@@ -359,7 +371,11 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
     // now do the animation magic to delete the new cells
     if (animated && newRowCount <= self.maximumRowCountToStillUseAnimationWhileExpanding) {
 		[CATransaction begin];
-		[CATransaction setCompletionBlock:completionBlock];
+		[CATransaction setCompletionBlock:^{
+			dispatch_async(dispatch_get_main_queue(), ^{
+				completionBlock();
+			});
+		}];
 		
 		[self beginUpdates];
 		
