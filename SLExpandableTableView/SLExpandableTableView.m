@@ -33,7 +33,7 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 - (void)downloadDataInSection:(NSInteger)section;
 
 - (void)_resetExpansionStates;
-- (BOOL)isCellVisible:(NSIndexPath*)path;
+- (BOOL)isCellFullyVisible:(NSIndexPath*)path;
 
 @end
 
@@ -66,8 +66,11 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
     [super setDataSource:self];
 }
 
-- (BOOL)isCellVisible:(NSIndexPath*)path {
-	return [self.indexPathsForVisibleRows containsObject:path];
+- (BOOL)isCellFullyVisible:(NSIndexPath*)path {
+	CGRect rect = [self rectForRowAtIndexPath:path];
+	rect = [self convertRect:rect toView:self.superview];
+	BOOL completelyVisible = CGRectContainsRect(self.frame, rect);
+	return completelyVisible;
 }
 
 - (void)setTableFooterView:(UIView *)tableFooterView {
@@ -276,7 +279,7 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 		// ensure sub area is visible
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.001 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
 			NSIndexPath* subPath = [NSIndexPath indexPathForRow:1 inSection:section];
-			if([self cellForRowAtIndexPath:subPath]) {
+			if([self cellForRowAtIndexPath:subPath] && ![self isCellFullyVisible:subPath]) {
 				[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
 			}
 			self.animating = NO;
