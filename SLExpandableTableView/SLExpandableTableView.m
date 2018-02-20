@@ -279,8 +279,15 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 		// ensure sub area is visible
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.001 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
 			NSIndexPath* subPath = [NSIndexPath indexPathForRow:1 inSection:section];
-			if([self cellForRowAtIndexPath:subPath] && ![self isCellFullyVisible:subPath]) {
-				[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
+			if([self cellForRowAtIndexPath:subPath]) {
+				if(![self isCellFullyVisible:subPath]) {
+					[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
+				}
+			} else {
+				@try {
+					[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
+				} @catch(NSException * __unused exception) {
+				}
 			}
 			self.animating = NO;
 		});
