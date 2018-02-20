@@ -27,7 +27,7 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 @property (nonatomic, retain) UIView *storedTableHeaderView;
 @property (nonatomic, retain) UIView *storedTableFooterView;
 
-@property (nonatomic, assign) BOOL animating;
+@property (atomic, assign) BOOL animating;
 @property (nonatomic, assign) NSInteger chainSection; // if -1, means no chain action
 
 - (void)downloadDataInSection:(NSInteger)section;
@@ -236,6 +236,8 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
         // section is already showing, return
         return;
     }
+	
+	self.animating = YES;
 
     [self deselectRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:section] animated:NO];
 
@@ -273,20 +275,11 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 		
 		// ensure sub area is visible
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.001 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-			// if sub cell is not visible, show it
-			[CATransaction begin];
-			[CATransaction setCompletionBlock:^{
-				dispatch_async(dispatch_get_main_queue(), ^{
-					self.animating = NO;
-				});
-			}];
-			[self beginUpdates];
-			
 			NSIndexPath* subPath = [NSIndexPath indexPathForRow:1 inSection:section];
-			[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
-			
-			[self endUpdates];
-			[CATransaction commit];
+			if([self cellForRowAtIndexPath:subPath]) {
+				[self scrollToRowAtIndexPath:subPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
+			}
+			self.animating = NO;
 		});
 	};
 	
@@ -294,11 +287,7 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
     // now do the animation magic to insert the new cells
     if (animated && newRowCount <= self.maximumRowCountToStillUseAnimationWhileExpanding) {
 		[CATransaction begin];
-		[CATransaction setCompletionBlock:^{
-			dispatch_async(dispatch_get_main_queue(), ^{
-				completionBlock();
-			});
-		}];
+		[CATransaction setCompletionBlock:completionBlock];
 		
         [self beginUpdates];
 
@@ -328,6 +317,8 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
         // section is not showing, return
         return;
     }
+	
+	self.animating = YES;
 
     if ([self.myDelegate respondsToSelector:@selector(tableView:willCollapseSection:animated:)]) {
         [self.myDelegate tableView:self willCollapseSection:section animated:animated];
@@ -371,11 +362,7 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
     // now do the animation magic to delete the new cells
     if (animated && newRowCount <= self.maximumRowCountToStillUseAnimationWhileExpanding) {
 		[CATransaction begin];
-		[CATransaction setCompletionBlock:^{
-			dispatch_async(dispatch_get_main_queue(), ^{
-				completionBlock();
-			});
-		}];
+		[CATransaction setCompletionBlock:completionBlock];
 		
 		[self beginUpdates];
 		
@@ -472,8 +459,6 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
                 // we need to download some data first
                 [self downloadDataInSection:indexPath.section];
             } else if(!self.animating) {
-				self.animating = YES;
-				
 				// if only allow one section expanded, we need collapse last expanded section
 				// also we need cancel downloading if has one section is in downloading state
 				self.chainSection = -1;
