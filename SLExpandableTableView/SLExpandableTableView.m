@@ -165,7 +165,7 @@ static BOOL protocol_containsSelector(Protocol *protocol, SEL selector)
 }
 
 - (void)downloadDataInSection:(NSInteger)section {
-	if(![@YES isEqual:(self.downloadingSectionsDictionary)[@(section)]]) {
+	if(![@YES isEqual:self.downloadingSectionsDictionary[@(section)]]) {
 		// if single expand, we need cancel previous download section
 		if(self.singleExpand) {
 			for(NSNumber* sec in [self.downloadingSectionsDictionary allKeys]) {
